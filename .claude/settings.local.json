@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm install -D tailwindcss@3 postcss autoprefixer)",
+      "Bash(npx tailwindcss init -p)",
+      "Bash(npm run build)",
+      "Bash(curl -s http://localhost:5173)",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(python -c \"import zipfile, re; z=zipfile.ZipFile\\(r''c:\\\\Users\\\\johnd\\\\Documents\\\\coding\\\\fm-trajectory-wonderkids\\\\help_ai\\\\Football Manager PlayStyle System And Logic.docx''\\); text=z.read\\(''word/document.xml''\\).decode\\(\\); print\\(re.sub\\(''<[^>]+>'', '' '', text\\)\\)\")",
+      "Bash(python3 -c \":*)",
+      "Bash(node -e \":*)",
+      "Bash(npx vercel --version)",
+      "Bash(npx vercel whoami)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(python -c \"import pdfplumber; pdf = pdfplumber.open\\(r''c:\\\\Users\\\\johnd\\\\Documents\\\\coding\\\\fm-trajectory-wonderkids\\\\help_ai\\\\Football Club Facilities Data - Football Club Facilities Data.pdf''\\); [print\\(p.extract_text\\(\\)\\) for p in pdf.pages[:5]]; pdf.close\\(\\)\")",
+      "Bash(python -c \"import PyPDF2; r = PyPDF2.PdfReader\\(r''c:\\\\Users\\\\johnd\\\\Documents\\\\coding\\\\fm-trajectory-wonderkids\\\\help_ai\\\\Football Club Facilities Data - Football Club Facilities Data.pdf''\\); [print\\(r.pages[i].extract_text\\(\\)\\) for i in range\\(min\\(5,len\\(r.pages\\)\\)\\)]\")"
+    ]
+  }
+}
