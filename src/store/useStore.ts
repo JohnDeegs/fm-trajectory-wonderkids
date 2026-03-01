@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Player, Shortlist, SaveGame } from '../types';
 
 const STORAGE_KEYS = {
-  favourites:   'fm-traj-favourites',
-  shortlists:   'fm-traj-shortlists',
-  geminiKey:    'fm-traj-gemini-key',
-  savedPlayers: 'fm-traj-saved-players',
-  saveGames:    'fm-traj-save-games',
+  favourites:        'fm-traj-favourites',
+  shortlists:        'fm-traj-shortlists',
+  geminiKey:         'fm-traj-gemini-key',
+  savedPlayers:      'fm-traj-saved-players',
+  saveGames:         'fm-traj-save-games',
+  favouriteSaveGames:'fm-traj-fav-save-games',
 };
 
 function load<T>(key: string, fallback: T): T {
@@ -30,12 +31,14 @@ export function useStore() {
   const [saveGames, setSaveGames]       = useState<SaveGame[]>(() => load(STORAGE_KEYS.saveGames, []));
   const [geminiKey, setGeminiKeyState]  = useState<string>(() => load(STORAGE_KEYS.geminiKey, ''));
   const [savedPlayers, setSavedPlayers] = useState<Record<string, Player>>(() => load(STORAGE_KEYS.savedPlayers, {}));
+  const [favouriteSaveGames, setFavouriteSaveGames] = useState<Record<string, string>>(() => load(STORAGE_KEYS.favouriteSaveGames, {}));
 
   // Persist favourites
   useEffect(() => { save(STORAGE_KEYS.favourites, favourites); }, [favourites]);
   useEffect(() => { save(STORAGE_KEYS.shortlists, shortlists); }, [shortlists]);
   useEffect(() => { save(STORAGE_KEYS.saveGames, saveGames); }, [saveGames]);
   useEffect(() => { save(STORAGE_KEYS.savedPlayers, savedPlayers); }, [savedPlayers]);
+  useEffect(() => { save(STORAGE_KEYS.favouriteSaveGames, favouriteSaveGames); }, [favouriteSaveGames]);
 
   const setGeminiKey = useCallback((key: string) => {
     setGeminiKeyState(key);
@@ -46,6 +49,7 @@ export function useStore() {
     setFavourites(prev => {
       if (prev.includes(uid)) {
         setSavedPlayers(sp => { const n = { ...sp }; delete n[uid]; return n; });
+        setFavouriteSaveGames(fsg => { const n = { ...fsg }; delete n[uid]; return n; });
         return prev.filter(id => id !== uid);
       } else {
         const player = players.find(p => p.uid === uid);
@@ -54,6 +58,15 @@ export function useStore() {
       }
     });
   }, [players]);
+
+  const setFavouriteSaveGame = useCallback((uid: string, saveGameId: string | undefined) => {
+    setFavouriteSaveGames(prev => {
+      const next = { ...prev };
+      if (saveGameId) next[uid] = saveGameId;
+      else delete next[uid];
+      return next;
+    });
+  }, []);
 
   const createShortlist = useCallback((name: string, saveGameId?: string) => {
     const id = `sl-${Date.now()}`;
@@ -71,6 +84,11 @@ export function useStore() {
     setShortlists(prev => prev.map(s =>
       s.saveGameId === id ? { ...s, saveGameId: undefined } : s
     ));
+    setFavouriteSaveGames(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(uid => { if (next[uid] === id) delete next[uid]; });
+      return next;
+    });
     setSaveGames(prev => prev.filter(sg => sg.id !== id));
   }, []);
 
@@ -134,5 +152,6 @@ export function useStore() {
     geminiKey, setGeminiKey,
     getFavouritePlayers,
     savedPlayers, syncSavedPlayers,
+    favouriteSaveGames, setFavouriteSaveGame,
   };
 }
