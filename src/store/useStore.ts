@@ -18,7 +18,11 @@ function load<T>(key: string, fallback: T): T {
 }
 
 function save(key: string, val: unknown) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) {
+    console.warn(`[fm-trajectory] Failed to save "${key}" to localStorage — storage may be full.`, e);
+  }
 }
 
 export function useStore() {

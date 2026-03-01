@@ -1,6 +1,17 @@
 import type { Player } from '../types';
 import { getNationYouthRating, getNationTier, getClubRecruitment } from './youthData';
 
+// Module-level cache — rebuilt only when a new player file is loaded
+let _playerMapCache: Map<string, Player> | null = null;
+let _playerMapRef: Player[] | null = null;
+function getPlayerMap(players: Player[]): Map<string, Player> {
+  if (players !== _playerMapRef) {
+    _playerMapCache = new Map(players.map(p => [p.uid, p]));
+    _playerMapRef = players;
+  }
+  return _playerMapCache!;
+}
+
 interface GeminiResponse {
   candidates: Array<{
     content: { parts: Array<{ text?: string; thought?: boolean }> }
@@ -79,7 +90,10 @@ export async function geminiSearch(
 
   const summaries = preFilter(players, query).map(buildPlayerSummary).join('\n');
 
-  const prompt = `You are an FM24 scout analyst. Given the following player data, return the IDs of the 30 most relevant players for this query: "${query}"
+  // Sanitize query — strip quotes to prevent prompt injection
+  const safeQuery = query.replace(/"/g, "'").slice(0, 500);
+
+  const prompt = `You are an FM24 scout analyst. Given the following player data, return the IDs of the 30 most relevant players for this query: "${safeQuery}"
 
 Player data (one per line, ID is in square brackets at the start):
 ${summaries}
@@ -119,8 +133,13 @@ Rules:
   if (arrayStart === -1 || arrayEnd <= arrayStart) {
     throw new Error(`Gemini unexpected format. parts=${parts.length} text=${JSON.stringify(text).slice(0, 300)}`);
   }
-  const uids: string[] = JSON.parse(text.slice(arrayStart, arrayEnd + 1));
-  const playerMap = new Map(players.map(p => [p.uid, p]));
+  let uids: string[];
+  try {
+    uids = JSON.parse(text.slice(arrayStart, arrayEnd + 1));
+  } catch {
+    throw new Error(`Gemini returned malformed JSON. text=${JSON.stringify(text).slice(0, 200)}`);
+  }
+  const playerMap = getPlayerMap(players);
 
   return uids
     .map(uid => playerMap.get(uid.replace(/^uid:/, '')))
