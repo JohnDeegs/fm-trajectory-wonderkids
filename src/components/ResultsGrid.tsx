@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Player } from '../types';
 import { getTrajectoryColour, getTrajectoryLabel } from '../lib/calculateTrajectory';
 import { ROLE_MAP } from '../lib/roleFormulas';
@@ -48,8 +49,16 @@ interface CardProps {
 }
 
 function PlayerCard({ player: p, rank, focusRoleKey, isFavourite, onClick, onToggleFavourite }: CardProps) {
+  const [copied, setCopied] = useState(false);
   const trajColor = getTrajectoryColour(p.trajectoryPct);
   const trajLabel = getTrajectoryLabel(p.trajectoryPct, p.age);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(p.name);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const displayRole = focusRoleKey && ROLE_MAP[focusRoleKey]
     ? ROLE_MAP[focusRoleKey].label
@@ -80,6 +89,13 @@ function PlayerCard({ player: p, rank, focusRoleKey, isFavourite, onClick, onTog
             {p.inf && (
               <span className="text-xs text-[#f87171] font-medium">{p.inf}</span>
             )}
+            <button
+              onClick={handleCopy}
+              title="Copy name"
+              className="text-[10px] px-1.5 py-0.5 rounded border border-[#2a3350] text-[#7c8db0] hover:text-white hover:border-[#4a5568] transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+            >
+              {copied ? '✓ Copied' : 'Copy'}
+            </button>
           </div>
           <div className="text-xs text-[#7c8db0] mt-0.5 flex flex-wrap gap-x-2">
             <span>{p.age}y</span>
