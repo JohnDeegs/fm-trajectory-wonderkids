@@ -19,7 +19,7 @@ export function ResultsGrid({ players, favourites, focusRoleKey, rankOffset = 0,
   return (
     <div className="space-y-2">
       <h2 className="text-sm font-semibold text-[#7c8db0] uppercase tracking-wider">
-        Search Results
+        Players
       </h2>
       <div className="grid gap-2">
         {players.map((p, i) => (

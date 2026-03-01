@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { UploadPanel } from './components/UploadPanel';
 import { SearchBar } from './components/SearchBar';
+import { SortBar } from './components/SortBar';
+import type { SortKey } from './components/SortBar';
 import { ResultsGrid } from './components/ResultsGrid';
 import { PlayerModal } from './components/PlayerModal';
 import { FavouritesPanel } from './components/FavouritesPanel';
@@ -9,11 +11,12 @@ import { parseHtmlExport } from './lib/parseHtml';
 import { scoreAllPlayers } from './lib/calculateTrajectory';
 import { geminiSearch } from './lib/geminiSearch';
 import { findRolesByQuery } from './lib/roleFormulas';
+import { getNationalitySearchTerms } from './lib/youthData';
 import { useStore } from './store/useStore';
 import type { Player } from './types';
 import './index.css';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 25;
 
 export default function App() {
   const store = useStore();
@@ -23,25 +26,28 @@ export default function App() {
   const [searchError, setSearchError] = useState('');
   const [activeView, setActiveView] = useState<'search' | 'favourites'>('search');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>('trajectory');
+  const [filterText, setFilterText] = useState('');
 
   const handleLoad = useCallback((html: string) => {
     const raw = parseHtmlExport(html);
     const scored = scoreAllPlayers(raw);
     store.setPlayers(scored);
     store.syncSavedPlayers(scored);
-    const top50 = [...scored]
-      .sort((a, b) => b.bestRoleScore - a.bestRoleScore)
-      .slice(0, 50);
-    store.setSearchResults(top50, null);
+    // Show all players sorted by trajectory on load
+    const sorted = [...scored].sort((a, b) => b.trajectoryPct - a.trajectoryPct);
+    store.setSearchResults(sorted, null);
     store.setLastQuery('');
     setSearchError('');
     setCurrentPage(1);
+    setFilterText('');
     setActiveView('search');
   }, [store]);
 
   const handleSearch = useCallback(async (query: string) => {
     setSearchLoading(true);
     setSearchError('');
+    setFilterText('');
     try {
       const results = await geminiSearch(query, store.players, store.geminiKey);
       const matchedRoles = findRolesByQuery(query);
@@ -64,9 +70,35 @@ export default function App() {
     }
   }, [store]);
 
+  const handleSortChange = (key: SortKey) => {
+    setSortKey(key);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (text: string) => {
+    setFilterText(text);
+    setCurrentPage(1);
+  };
+
+  // Apply local filter + sort on top of whatever results are currently shown
+  const displayPlayers = useMemo(() => {
+    let list = store.searchResults;
+
+    if (filterText.trim()) {
+      const q = filterText.toLowerCase();
+      list = list.filter(p => p.name.toLowerCase().includes(q));
+    }
+
+    return [...list].sort((a, b) => {
+      if (sortKey === 'trajectory') return b.trajectoryPct - a.trajectoryPct;
+      if (sortKey === 'score')      return b.bestRoleScore - a.bestRoleScore;
+      return b.projectedPeak - a.projectedPeak;
+    });
+  }, [store.searchResults, sortKey, filterText]);
+
   const favCount = store.favourites.length;
-  const totalPages = Math.ceil(store.searchResults.length / PAGE_SIZE);
-  const pagedPlayers = store.searchResults.slice(
+  const totalPages = Math.ceil(displayPlayers.length / PAGE_SIZE);
+  const pagedPlayers = displayPlayers.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   );
@@ -95,7 +127,7 @@ export default function App() {
             >
               🔍 Search{store.players.length > 0 && (
                 <span className={`ml-1.5 text-xs ${activeView === 'search' ? 'text-[#4f8ef7]/70' : 'text-[#4a5568]'}`}>
-                  {store.players.length}
+                  {store.players.length.toLocaleString()}
                 </span>
               )}
             </button>
@@ -136,12 +168,22 @@ export default function App() {
         {activeView === 'search' ? (
           <>
             {store.players.length > 0 && (
-              <SearchBar
-                onSearch={handleSearch}
-                loading={searchLoading}
-                disabled={false}
-                hasKey={!!store.geminiKey}
-              />
+              <div className="space-y-3">
+                <SearchBar
+                  onSearch={handleSearch}
+                  loading={searchLoading}
+                  disabled={false}
+                  hasKey={!!store.geminiKey}
+                />
+                <SortBar
+                  sortKey={sortKey}
+                  onSortChange={handleSortChange}
+                  filterText={filterText}
+                  onFilterChange={handleFilterChange}
+                  totalCount={store.searchResults.length}
+                  filteredCount={displayPlayers.length}
+                />
+              </div>
             )}
 
             {searchError && (
@@ -153,6 +195,7 @@ export default function App() {
             {store.lastQuery && store.searchResults.length > 0 && (
               <p className="text-xs text-[#7c8db0]">
                 Results for: <span className="text-white italic">"{store.lastQuery}"</span>
+                {filterText && <span className="ml-1">— filtered to {displayPlayers.length}</span>}
               </p>
             )}
 
@@ -194,7 +237,7 @@ export default function App() {
                 <p className="text-sm mt-2">
                   {store.geminiKey
                     ? 'Use the search bar above to find players by natural language'
-                    : 'Add your Gemini API key in Settings to enable search'}
+                    : 'Add your Gemini API key in Settings to enable AI search'}
                 </p>
               </div>
             )}
@@ -215,6 +258,8 @@ export default function App() {
             onCreateSaveGame={store.createSaveGame}
             onDeleteSaveGame={store.deleteSaveGame}
             onRenameSaveGame={store.renameSaveGame}
+            favouriteSaveGames={store.favouriteSaveGames}
+            onSetFavouriteSaveGame={store.setFavouriteSaveGame}
           />
         )}
       </main>
