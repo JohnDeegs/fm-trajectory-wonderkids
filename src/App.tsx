@@ -11,7 +11,6 @@ import { parseHtmlExport } from './lib/parseHtml';
 import { scoreAllPlayers } from './lib/calculateTrajectory';
 import { geminiSearch } from './lib/geminiSearch';
 import { findRolesByQuery } from './lib/roleFormulas';
-import { getNationalitySearchTerms } from './lib/youthData';
 import { useStore } from './store/useStore';
 import type { Player } from './types';
 import './index.css';
@@ -281,6 +280,7 @@ export default function App() {
       {showSettings && (
         <SettingsPanel
           geminiKey={store.geminiKey}
+          players={store.players}
           onSave={store.setGeminiKey}
           onClose={() => setShowSettings(false)}
         />

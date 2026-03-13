@@ -1,0 +1,22 @@
+{
+  "name": "fm-trajectory-bot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node dist/bot.js",
+    "build": "tsc",
+    "dev": "ts-node bot.ts"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "pg": "^8.11.5",
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.6"
+  }
+}
