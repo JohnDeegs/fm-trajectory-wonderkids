@@ -8,6 +8,7 @@ interface Props {
   allPlayers: Player[];
   savedPlayers: Record<string, Player>;
   saveGames: SaveGame[];
+  favouriteSaveGames: Record<string, string>;
   onPlayerClick: (p: Player) => void;
   onRemoveFavourite: (uid: string) => void;
   onCreateShortlist: (name: string, saveGameId?: string) => string;
@@ -17,17 +18,20 @@ interface Props {
   onCreateSaveGame: (name: string) => string;
   onDeleteSaveGame: (id: string) => void;
   onRenameSaveGame: (id: string, name: string) => void;
+  onSetFavouriteSaveGame: (uid: string, saveGameId: string | undefined) => void;
 }
 
 export function FavouritesPanel({
   favourites, shortlists, allPlayers, savedPlayers, saveGames,
+  favouriteSaveGames,
   onPlayerClick, onRemoveFavourite, onCreateShortlist, onDeleteShortlist,
   onRemoveFromShortlist, onAddToShortlist,
-  onCreateSaveGame, onDeleteSaveGame,
+  onCreateSaveGame, onDeleteSaveGame, onSetFavouriteSaveGame,
 }: Props) {
   const [activeTab, setActiveTab] = useState<'fav' | string>('fav');
   const [dragOverTab, setDragOverTab] = useState<string | null>(null);
   const [activeSaveGameFilter, setActiveSaveGameFilter] = useState<string | 'all' | 'ungrouped'>('all');
+  const [movingUid, setMovingUid] = useState<string | null>(null);
 
   // allPlayers takes precedence over savedPlayers (fresh data preferred)
   const playerMap = new Map<string, Player>([
@@ -48,8 +52,15 @@ export function FavouritesPanel({
     }
   }, [activeSaveGameFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const favPlayers = favourites.map(uid => playerMap.get(uid)).filter(Boolean) as Player[];
-  const orphanedUids = favourites.filter(uid => !playerMap.has(uid));
+  // Filter favourites by active save game
+  const filteredFavUids = favourites.filter(uid => {
+    if (activeSaveGameFilter === 'all') return true;
+    if (activeSaveGameFilter === 'ungrouped') return !favouriteSaveGames[uid];
+    return favouriteSaveGames[uid] === activeSaveGameFilter;
+  });
+
+  const favPlayers = filteredFavUids.map(uid => playerMap.get(uid)).filter(Boolean) as Player[];
+  const orphanedUids = filteredFavUids.filter(uid => !playerMap.has(uid));
 
   const activeShortlist = shortlists.find(s => s.id === activeTab);
   const shortlistPlayers = activeShortlist
@@ -115,7 +126,7 @@ export function FavouritesPanel({
 
       {/* Shortlist tabs */}
       <div className="flex overflow-x-auto border-b border-[#2a3350]">
-        <Tab label={`Favourites (${favourites.length})`} active={activeTab === 'fav'} onClick={() => setActiveTab('fav')} />
+        <Tab label={`Favourites (${filteredFavUids.length})`} active={activeTab === 'fav'} onClick={() => setActiveTab('fav')} />
         {visibleShortlists.map(s => (
           <Tab
             key={s.id}
@@ -171,7 +182,10 @@ export function FavouritesPanel({
       )}
 
       {/* Player list */}
-      <div className="divide-y divide-[#2a3350] max-h-96 overflow-y-auto">
+      <div
+        className="divide-y divide-[#2a3350] max-h-96 overflow-y-auto"
+        onClick={() => setMovingUid(null)}
+      >
         {displayPlayers.length === 0 && orphanedUids.length === 0 ? (
           <p className="text-[#7c8db0] text-sm text-center py-6">No players here yet.</p>
         ) : (
@@ -187,6 +201,14 @@ export function FavouritesPanel({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{p.name}</p>
                 <p className="text-xs text-[#7c8db0]">{p.age}y · {p.position} · {p.club}</p>
+                {/* Save game label shown in "all" view */}
+                {activeSaveGameFilter === 'all' && saveGames.length > 0 && activeTab === 'fav' && (
+                  <p className="text-xs text-[#4a5568] mt-0.5">
+                    {favouriteSaveGames[p.uid]
+                      ? saveGames.find(sg => sg.id === favouriteSaveGames[p.uid])?.name ?? 'Unknown'
+                      : 'Ungrouped'}
+                  </p>
+                )}
               </div>
               <div className="text-right shrink-0">
                 <span className="text-sm font-bold font-mono" style={{ color: getTrajectoryColour(p.trajectoryPct) }}>
@@ -194,6 +216,40 @@ export function FavouritesPanel({
                 </span>
                 <p className="text-xs text-[#7c8db0]">→ {p.projectedPeak.toFixed(1)}</p>
               </div>
+
+              {/* Move to save game button — only on Favourites tab when save games exist */}
+              {activeTab === 'fav' && saveGames.length > 0 && (
+                <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+                  <button
+                    className="text-[#7c8db0] hover:text-[#4f8ef7] opacity-0 group-hover:opacity-100 transition-all text-xs px-1"
+                    onClick={() => setMovingUid(movingUid === p.uid ? null : p.uid)}
+                    title="Move to save game"
+                  >
+                    ⇄
+                  </button>
+                  {movingUid === p.uid && (
+                    <div className="absolute right-0 top-full mt-1 bg-[#0f1320] border border-[#2a3350] rounded-lg shadow-xl z-20 min-w-36 py-1">
+                      <p className="px-3 py-1 text-[10px] text-[#4a5568] uppercase tracking-wider">Move to save game</p>
+                      <button
+                        className={`w-full text-left px-3 py-1.5 text-xs transition-colors hover:bg-[#4f8ef7]/10 ${!favouriteSaveGames[p.uid] ? 'text-[#4f8ef7]' : 'text-[#7c8db0] hover:text-white'}`}
+                        onClick={() => { onSetFavouriteSaveGame(p.uid, undefined); setMovingUid(null); }}
+                      >
+                        No save game {!favouriteSaveGames[p.uid] && '✓'}
+                      </button>
+                      {saveGames.map(sg => (
+                        <button
+                          key={sg.id}
+                          className={`w-full text-left px-3 py-1.5 text-xs transition-colors hover:bg-[#4f8ef7]/10 ${favouriteSaveGames[p.uid] === sg.id ? 'text-[#4f8ef7]' : 'text-[#7c8db0] hover:text-white'}`}
+                          onClick={() => { onSetFavouriteSaveGame(p.uid, sg.id); setMovingUid(null); }}
+                        >
+                          {sg.name} {favouriteSaveGames[p.uid] === sg.id && '✓'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 className="text-[#7c8db0] hover:text-[#f87171] opacity-0 group-hover:opacity-100 transition-all text-sm shrink-0"
                 onClick={e => {

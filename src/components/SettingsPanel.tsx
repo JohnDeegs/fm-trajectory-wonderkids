@@ -1,12 +1,15 @@
 import { useState } from 'react';
+import type { Player } from '../types';
+import { exportForBot } from '../lib/exportForBot';
 
 interface Props {
   geminiKey: string;
+  players: Player[];
   onSave: (key: string) => void;
   onClose: () => void;
 }
 
-export function SettingsPanel({ geminiKey, onSave, onClose }: Props) {
+export function SettingsPanel({ geminiKey, players, onSave, onClose }: Props) {
   const [draft, setDraft] = useState(geminiKey);
   const [saved, setSaved] = useState(false);
 
@@ -55,6 +58,21 @@ export function SettingsPanel({ geminiKey, onSave, onClose }: Props) {
           >
             {saved ? '✓ Saved' : 'Save Settings'}
           </button>
+
+          {players.length > 0 && (
+            <div className="border-t border-[#2a3350] pt-4 space-y-2">
+              <p className="text-sm font-medium text-[#7c8db0]">Telegram Bot</p>
+              <button
+                onClick={() => exportForBot(players)}
+                className="w-full bg-[#2a3350] hover:bg-[#334060] text-white font-medium py-2 rounded-lg transition-colors text-sm"
+              >
+                📤 Export for Telegram ({players.length.toLocaleString()} players)
+              </button>
+              <p className="text-xs text-[#7c8db0]">
+                Downloads a compact JSON file to upload to the Telegram bot.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

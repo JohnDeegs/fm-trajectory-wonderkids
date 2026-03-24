@@ -135,6 +135,12 @@ export function PlayerModal({ player: p, isFavourite, shortlists, onToggleFavour
   const attrs = p.attrs as Record<string, number>;
 
   const [hoveredPsId, setHoveredPsId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(p.name);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
   const hoveredDef = hoveredPsId ? PLAY_STYLE_DEFS.find(d => d.id === hoveredPsId) : null;
   const primarySet = new Set<string>(hoveredDef?.primary ?? []);
   const supportSet = new Set<string>(hoveredDef?.support ?? []);
@@ -160,7 +166,16 @@ export function PlayerModal({ player: p, isFavourite, shortlists, onToggleFavour
         <div className="p-5 border-b border-[#2a3350]">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-white truncate">{p.name}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-white truncate">{p.name}</h2>
+                <button
+                  onClick={handleCopy}
+                  title="Copy name"
+                  className="text-xs px-2 py-0.5 rounded border border-[#2a3350] text-[#7c8db0] hover:text-white hover:border-[#4a5568] transition-colors shrink-0"
+                >
+                  {copied ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-sm text-[#7c8db0]">
                 <span>{p.age} years old</span>
                 <span>{p.nationality}{p.nationality2 ? ` / ${p.nationality2}` : ''}</span>

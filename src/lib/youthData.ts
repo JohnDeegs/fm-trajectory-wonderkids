@@ -257,6 +257,71 @@ export const CLUB_YOUTH_RECRUITMENT: Record<string, RecruitmentTier> = {
   'FCSB':                    'Excellent',
 };
 
+// ── Country name lookup (3-letter code → full English country name) ───────────
+// Used so filter text like "Ireland" matches players with nationality "IRL".
+export const NATIONALITY_COUNTRY_NAMES: Record<string, string> = {
+  'ENG': 'England',       'SCO': 'Scotland',        'WAL': 'Wales',
+  'NIR': 'Northern Ireland', 'IRL': 'Ireland',       'REP': 'Ireland',
+  'FRA': 'France',        'GER': 'Germany',          'ESP': 'Spain',
+  'ITA': 'Italy',         'POR': 'Portugal',         'NED': 'Netherlands',
+  'BEL': 'Belgium',       'BRA': 'Brazil',           'ARG': 'Argentina',
+  'COL': 'Colombia',      'MEX': 'Mexico',           'USA': 'United States',
+  'JPN': 'Japan',         'KOR': 'South Korea',      'PRK': 'North Korea',
+  'EGY': 'Egypt',         'TUR': 'Turkey',           'UKR': 'Ukraine',
+  'NOR': 'Norway',        'SWE': 'Sweden',           'DEN': 'Denmark',
+  'FIN': 'Finland',       'POL': 'Poland',           'CZE': 'Czech Republic',
+  'SVK': 'Slovakia',      'ROM': 'Romania',          'ROU': 'Romania',
+  'HUN': 'Hungary',       'AUT': 'Austria',          'SUI': 'Switzerland',
+  'GRE': 'Greece',        'SRB': 'Serbia',           'CRO': 'Croatia',
+  'HRV': 'Croatia',       'SLO': 'Slovenia',         'SVN': 'Slovenia',
+  'BIH': 'Bosnia',        'BOS': 'Bosnia',           'MNE': 'Montenegro',
+  'MON': 'Montenegro',    'ALB': 'Albania',          'MKD': 'North Macedonia',
+  'KOS': 'Kosovo',        'XKX': 'Kosovo',           'GEO': 'Georgia',
+  'ARM': 'Armenia',       'AZE': 'Azerbaijan',       'BLR': 'Belarus',
+  'UZB': 'Uzbekistan',    'KAZ': 'Kazakhstan',       'RUS': 'Russia',
+  'MAR': 'Morocco',       'ALG': 'Algeria',          'TUN': 'Tunisia',
+  'NGA': 'Nigeria',       'NIG': 'Nigeria',          'GHA': 'Ghana',
+  'CMR': 'Cameroon',      'SEN': 'Senegal',          'CIV': 'Ivory Coast',
+  'CVI': 'Ivory Coast',   'COD': 'DR Congo',         'DRC': 'DR Congo',
+  'ETH': 'Ethiopia',      'KEN': 'Kenya',            'ZAM': 'Zambia',
+  'ZMB': 'Zambia',        'RSA': 'South Africa',     'ZAF': 'South Africa',
+  'MOZ': 'Mozambique',    'ANG': 'Angola',           'RWA': 'Rwanda',
+  'UGA': 'Uganda',        'TAN': 'Tanzania',         'MLI': 'Mali',
+  'BEN': 'Benin',         'TOG': 'Togo',             'GUI': 'Guinea',
+  'GIN': 'Guinea',        'SUD': 'Sudan',            'SDN': 'Sudan',
+  'CPV': 'Cape Verde',    'LBA': 'Libya',            'LBY': 'Libya',
+  'BOT': 'Botswana',      'BWA': 'Botswana',
+  'IRN': 'Iran',          'IRI': 'Iran',             'IRQ': 'Iraq',
+  'KSA': 'Saudi Arabia',  'SAU': 'Saudi Arabia',     'UAE': 'United Arab Emirates',
+  'QAT': 'Qatar',         'JOR': 'Jordan',           'KUW': 'Kuwait',
+  'LIB': 'Lebanon',       'LBN': 'Lebanon',          'ISR': 'Israel',
+  'PAL': 'Palestine',     'PLE': 'Palestine',        'SYR': 'Syria',
+  'YEM': 'Yemen',         'OMA': 'Oman',             'OMN': 'Oman',
+  'BAH': 'Bahrain',       'BHR': 'Bahrain',
+  'CHN': 'China',         'HKG': 'Hong Kong',        'AUS': 'Australia',
+  'NZL': 'New Zealand',   'IND': 'India',            'THA': 'Thailand',
+  'VIE': 'Vietnam',       'IDN': 'Indonesia',        'INA': 'Indonesia',
+  'MYA': 'Myanmar',       'MMR': 'Myanmar',          'PHI': 'Philippines',
+  'PHL': 'Philippines',
+  'URU': 'Uruguay',       'PAR': 'Paraguay',         'BOL': 'Bolivia',
+  'PER': 'Peru',          'ECU': 'Ecuador',          'CHI': 'Chile',
+  'CHL': 'Chile',         'VEN': 'Venezuela',        'CAN': 'Canada',
+  'CRC': 'Costa Rica',    'PAN': 'Panama',           'ESA': 'El Salvador',
+  'SLV': 'El Salvador',   'HAI': 'Haiti',            'HTI': 'Haiti',
+  'JAM': 'Jamaica',       'TRI': 'Trinidad',         'TTO': 'Trinidad',
+  'ISL': 'Iceland',       'ICE': 'Iceland',          'FAR': 'Faroe Islands',
+  'FRO': 'Faroe Islands', 'LTU': 'Lithuania',        'LAT': 'Latvia',
+  'LVA': 'Latvia',        'EST': 'Estonia',          'CYP': 'Cyprus',
+};
+
+/** Returns search terms for a nationality code: the code itself + full country name. */
+export function getNationalitySearchTerms(code: string): string[] {
+  const name = NATIONALITY_COUNTRY_NAMES[code];
+  return name
+    ? [code.toLowerCase(), name.toLowerCase()]
+    : [code.toLowerCase()];
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 export function getNationYouthRating(nationality: string): number | null {
