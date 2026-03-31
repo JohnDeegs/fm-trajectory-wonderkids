@@ -260,9 +260,82 @@ feat: phase 9 — Telegram bot (export + Railway bot)
 
 ---
 
+### Phase 10 — Backend API (Auth + Cloud Shortlists)
+
+Railway-hosted Express + TypeScript API service. Shared PostgreSQL with the bot.
+
+**Auth:**
+- `POST /auth/register` — email + password (bcrypt, cost 12)
+- `POST /auth/login` — returns short-lived JWT access token (15 min) + refresh token (7 days)
+- `POST /auth/refresh` — rotate refresh token (single-use, stored in DB)
+- `POST /auth/logout` — invalidate refresh token
+- Rate limiting on all auth endpoints
+
+**Shortlists:**
+- `GET /shortlists` — all shortlists for authenticated user
+- `POST /shortlists` — create shortlist
+- `PUT /shortlists/:id` — rename
+- `DELETE /shortlists/:id` — delete + cascade players
+- `POST /shortlists/:id/players` — add player (full `Player` JSON stored as JSONB)
+- `DELETE /shortlists/:id/players/:uid` — remove player
+
+**Schema:**
+```sql
+users (id, email, password_hash, telegram_chat_id, created_at)
+refresh_tokens (id, user_id, token_hash, expires_at, used_at)
+shortlists (id, user_id, save_game_id, name, created_at)
+shortlist_players (id, shortlist_id, uid, player_data JSONB)
+user_preferences (id, user_id, preferences JSONB, updated_at)
+conversation_history (id, user_id, role, content, created_at)
+```
+
+Deployed as a second Railway service pointing at the shared PostgreSQL instance.
+
+### Phase 11 — Web App Accounts
+
+Add login/register UI and replace localStorage shortlist calls with API calls.
+
+- Login/register modal (email + password)
+- JWT stored in `localStorage`; attached as `Authorization: Bearer` header on all API calls
+- Shortlist reads/writes go to API when logged in; fall back to localStorage when not
+- "Link Telegram" flow — generates a one-time code the user sends to the bot to connect accounts
+
+### Phase 12 — AI Scouting Agent (Telegram)
+
+Replace the current query-and-respond bot with a Claude-powered scouting agent. Users link their Telegram account to their web account via `/link <code>`.
+
+**Agent architecture:**
+- Each message loads: last N conversation turns from DB + user preferences + shortlist summary
+- Claude claude-sonnet-4-6 with tool use
+- Tools:
+  - `get_shortlist` — fetch user's saved players from API
+  - `search_players` — query uploaded player data
+  - `update_preferences` — write learned preferences back to `user_preferences`
+  - `compare_players` — head-to-head attribute comparison
+  - `scout_recommendation` — proactively surface players matching preference profile
+- Conversation history persisted in `conversation_history` table → memory across sessions
+- Preferences stored as structured JSONB, updated by the agent as it learns:
+  ```json
+  {
+    "preferred_roles": ["Pressing Forward"],
+    "age_range": [16, 21],
+    "min_trajectory": 110,
+    "preferred_leagues": ["Premier League"]
+  }
+  ```
+
+**Commands:**
+- `/link <code>` — connect Telegram to web account
+- `/scout <query>` — agent responds with scouting recommendations
+- `/shortlist` — summarise saved players
+- `/preferences` — show what the agent has learned about your tastes
+- All other messages — free-form conversation with the agent
+
+---
+
 ## Out of Scope (MVP)
 
 - Per-role trajectory curves (78 roles use category fallbacks — acceptable for MVP)
-- Tests (would add confidence to the formula port; worth adding in a follow-up)
-- ~~Backend / accounts / cloud sync~~ (addressed in Phase 9 for Telegram use case)
+- ~~Tests (would add confidence to the formula port; worth adding in a follow-up)~~
+- ~~Backend / accounts / cloud sync~~ (addressed in Phases 10–11)
 - Multi-game comparison views
